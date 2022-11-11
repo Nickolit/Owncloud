@@ -1,0 +1,133 @@
+---
+kind: deployment
+apiVersion: apps/v1
+metadata:
+  name  : owncloud
+  labels:
+    app: owncloud
+spec:
+  revisionHystoryLimit: 10
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: owncloud
+  template:
+    metadata:
+      labels:
+        app : owncloud
+    spec:
+      containers:
+      - name           : owncloud
+        image          : owncloud
+        imagePullPolicy: Always
+        env:
+        - name : OWNCLOUD_DOMAIN
+          value: 'owncloud.kube'
+        - name : OWNCLOUD_LOGLEVEL
+          value: '0'
+        - name : OWNCLOUD_DB_TYPE
+          value: 'mysql'
+        - name : OWNCLOUD_DB_HOST
+          value: 'mariadb:3306'
+        - name : OWNCLOUD_DB_NAME
+          value: 'owncloud'
+        - name : OWNCLOUD_DB_USERNAME
+          value: 'owncloud'
+        - name : OWNCLOUD_DB_PASSWORD
+          value: 'owncloud'
+        - name : OWNCLOUD_ADMIN_USERNAME
+          value: 'admin'
+        - name : OWNCLOUD_ADMIN_PASSWORD
+          value: 'admin'
+        - name : OWNCLOUD_VOLUME_ROOT
+          value: 'C:\owncloud'
+        - name : OWNCLOUD_UTF8MB4_ENABLED
+          value: 'true'
+        ports:
+        - name : http
+          containerPort: 80
+        - name : https
+          containerPort: 443
+        livenessProbe:
+          exec:
+            command:
+            - /usr/bin/healthcheck
+          initialDelaySeconds: 30
+          timeoutSeconds: 3
+          failureTreshold: 30
+        volumeMounts:
+        - name : storage
+          mountPath: /var/lib/owncloud
+      volumes:
+      - name : storage
+        hostPath:
+          path : /var/lib/owncloud
+          type : Directory0rCreate
+
+---
+kind: Deployment
+apiVersion: apps/v1beta1
+metadata:
+  name  : mariadb
+  labels:
+    app: mariadb
+spec:
+  revisionHystoryLimit: 10
+  strategy:
+    type  : Recreate
+  selector:
+    matchLabels:
+      app : mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      containers:
+      - name           : mariadb
+        image          : mariadb:latest
+        imagePullPolicy: Always
+        env:
+        - name : MARIADB_ROOT_PASSWORD
+          value: 'owncloud'
+        - name : MARIADB_USERNAME
+          value: 'owncloud'
+        - name : MARIADB_PASSWORD
+          value: 'owncloud'
+        - name : MARIADB_DATABASE
+          value: 'owncloud'
+        - name : MARIADB_MAX_ALLOWED_PACKET
+          value: '128M'
+        - name : MARIADB_INNODB_LOG_FILE_SIZE
+          value: '64M'
+        - name : MARIADB_INNODB_BUFFER_POOL_SIZE
+          value: '64M'
+        - name : MARIADB_INNODB_LARGE_PREFIX
+          value: 'ON'
+        - name : MARIADB_INNODB_FILE_FORMAT
+          value: 'Barracuda'
+        ports:
+        - name : mysql
+          containerPort: 3306
+        livenessProbe:
+          exec:
+            command:
+            - /usr/bin/healthcheck
+          initialDelaySeconds: 30
+          timeoutSeconds: 3
+          failureTreshold: 30
+        readinessProbe:
+          exec:
+            command:
+            - /usr/bin/healthcheck
+          initialDelaySeconds: 30
+          timeoutSeconds: 3
+          failureTreshold: 30
+        volumeMounts:
+        - name : mysql
+          hostPath:
+            path: /var/lib/mysql
+            type: Directory0rCreate

@@ -1,0 +1,27 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: owncloud
+spec:
+  selector:
+    app: owncloud
+  ports:
+  - name      : http
+    port      : 80
+    targetPort: http
+    protocol  : TCP
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: mariadb
+spec:
+  selector:
+    app: mariadb
+  ports:
+  - name      : mysql
+    port      : 3306
+    targetPort: mysql
+    protocol  : TCP
