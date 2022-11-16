@@ -1,0 +1,22 @@
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: portal-sk-ru-onlyoffice-in
+  namespace: online-platform
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+spec:
+  tls:
+  - hosts:
+    - onlyoffice.uat.sk.ru
+    secretName: uat-tls-secret
+  rules:
+  - host: onlyoffice.uat.sk.ru
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: portal-sk-ru-online-editor-svc
+          servicePort: 443

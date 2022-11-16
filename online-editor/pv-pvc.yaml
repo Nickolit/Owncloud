@@ -1,0 +1,32 @@
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: nfs-pvc-online-editor-claim
+  namespace: online-platform
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nfs-pv-online-editor
+  namespace: online-platform
+  annotations:
+    volume.beta.kubernetes.io/mount-options: vers=4,port=0,hard,proto=tcp,local_lock=none,async
+spec:
+  persistentVolumeReclaimPolicy: Retain
+  claimRef:
+    namespace: online-platform
+    name: nfs-pvc-online-editor-claim
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: 10.10.10.10
+    path: /online-editor

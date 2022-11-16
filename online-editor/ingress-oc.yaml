@@ -1,0 +1,21 @@
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: portal-sk-ru-online-editor-in
+  namespace: online-platform
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+spec:
+  tls:
+  - hosts:
+    - online-editor.uat.sk.ru
+    secretName: uat-tls-secret
+  rules:
+  - host: online-editor.uat.sk.ru
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: portal-sk-ru-online-editor-svc
+          servicePort: 8080

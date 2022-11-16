@@ -1,0 +1,154 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portal-sk-ru-online-editor
+  namespace: online-platform
+  labels:
+    version: "buildVERSION_DEPLOY"
+spec:
+  selector:
+    matchLabels:
+      app: portal-sk-ru-online-editor
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: portal-sk-ru-online-editor
+    spec:
+      containers:
+      - name: portal-sk-ru-online-editor-db
+        image: "mariadb:10.7"
+        envFrom:
+        - configMapRef:
+            name: portal-sk-ru-online-editor-cm
+        - secretRef:
+            name: portal-sk-ru-online-editor-secret
+        ports:
+        - containerPort: 3306
+          name: db
+        volumeMounts:
+        - name: online-editor
+          mountPath: /var/lib/mysql
+          subPath: db/
+      - name: portal-sk-ru-online-editor-owncloud
+        image: "uat-registry.sk.ru/portal-sk-ru-online-editor-owncloud:buildVERSION_DEPLOY"
+        envFrom:
+        - configMapRef:
+            name: portal-sk-ru-online-editor-cm
+        - secretRef:
+            name: portal-sk-ru-online-editor-secret
+        ports:
+        - containerPort: 8080
+          name: owncloud
+        volumeMounts:
+        - name: online-editor
+          mountPath: /bitnami/owncloud
+          subPath: _data/
+        - name: tz-config
+          mountPath: /etc/localtime
+          readOnly: true
+      - name: portal-sk-ru-online-editor-onlyoffice
+        image: "onlyoffice/documentserver:7.2.1"
+        envFrom:
+        - configMapRef:
+            name: portal-sk-ru-online-editor-cm
+        - secretRef:
+            name: portal-sk-ru-online-editor-secret
+        ports:
+        - containerPort: 80
+          name: onlyoffice
+        - containerPort: 443
+          name: onlyoffice-sec
+        volumeMounts:
+        - name: online-editor
+          mountPath: /var/www/onlyoffice/Data
+          subPath: onlyoffice/Data
+        - name: online-editor
+          mountPath: /var/lib/onlyoffice
+          subPath: onlyoffice/
+        - name: tz-config
+          mountPath: /etc/localtime
+          readOnly: true
+        - name: tls-crt
+          mountPath: /var/www/onlyoffice/Data/certs/tls-crt
+          readOnly: true
+        - name: tls-key
+          mountPath: /var/www/onlyoffice/Data/certs/tls-key
+          readOnly: true
+        - name: oo-dh
+          mountPath: /var/www/onlyoffice/Data/certs/dhparam
+          readOnly: true
+      - name: portal-sk-ru-online-editor-redis
+        image: "redis:6.2.0"
+        args: ["/etc/redis/redis.conf", "--requirepass", "$(REDIS_PASS)"]
+        volumeMounts:
+        - name: redis-config
+          mountPath: /etc/redis
+          readOnly: true
+        ports:
+        - containerPort: 6379
+          name: redis
+        envFrom:
+        - configMapRef:
+            name: portal-sk-ru-online-editor-cm
+        - secretRef:
+            name: portal-sk-ru-online-editor-secret
+      #exporter
+      - name: portal-sk-ru-online-editor-redis-exporter
+        image: oliver006/redis_exporter:v1.31.3
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        env:
+        - name: REDIS_ADDR
+          value: portal-sk-ru-online-editor-svc:6379
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: portal-sk-ru-online-editor-secret
+              key: REDIS_PASS
+        ports:
+        - containerPort: 9121
+          name: metrics
+      hostAliases:
+      - ip: "10.1.39.140"
+        hostnames:
+        - "online-editor.uat.sk.ru"
+      - ip: "10.1.39.140"
+        hostnames:
+        - "onlyoffice.uat.sk.ru"
+      imagePullSecrets:
+      - name: uat-secret
+      volumes:
+      - name: online-editor
+        persistentVolumeClaim:
+          claimName: nfs-pvc-online-editor-claim
+      - name: redis-config
+        configMap:
+          name: portal-sk-ru-online-editor-cm
+          items:
+          - key: config
+            path: redis.conf
+      - name: tz-config
+        hostPath:
+          path: /etc/localtime
+      - name: tls-crt
+        secret:
+          secretName: portal-sk-ru-online-editor-secret
+          items:
+          - key: OO_SSL_CERT
+            path: tls.crt
+      - name: tls-key
+        secret:
+          secretName: portal-sk-ru-online-editor-secret
+          items:
+          - key: OO_SSL_KEY
+            path: tls.key
+      - name: oo-dh
+        secret:
+          secretName: portal-sk-ru-online-editor-secret
+          items:
+          - key: OO_SSL_DHPARAM
+            path: dhparam.pem
