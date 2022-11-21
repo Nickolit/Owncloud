@@ -1,0 +1,32 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name     : owncloud-edit-cm
+  namespace: online_platform
+data:
+  DB_TYPE                      : 'postgres'
+  DB_HOST                      : '10.96.0.1'
+  DB_PORT                      : '5432'
+  DB_NAME                      : 'owncloud_edit_onlyoffice'
+  DB_USER                      : 'owncloud_edit_onlyoffice'
+  JWT_ENABLED                  : 'TRUE'
+  MARIADB_USER                 : 'owncloud_edit_owncloud'
+  MARIADB_DATABASE             : 'owncloud_edit_owncloud'
+  OWNCLOUD_DATABASE_HOST       : 'kubernetes'
+  OWNCLOUD_DATABASE_PORT_NUMBER: '3306'
+  OWNCLOUD_DATABASE_USER       : 'owncloud_edit_owncloud'
+  OWNCLOUD_DATABASE_NAME       : 'owncloud_edit_owncloud'
+  OWNCLOUD_HOST                : 'http://127.0.0.1/owncloud'
+  REDIS_SERVER_HOST            : 'owncloud-edit-svc'
+  REDIS_SERVER_PORT            : '6379'
+  SSL_CERTIFICATE_PATH         : '/var/www/onlyoffice/Data/certs/tls-crt/tls.crt'
+  SSL_KEY_PATH                 : '/var/www/onlyoffice/Data/certs/tls-key/tls.key'
+  SSL_DHPARAM_PATH             : '/var/www/onlyoffice/Data/certs/dhparam/dhparam.pem'
+  TZ                           : 'Europe/Moscow'
+  USE_UNAUTHORIZED_STORAGE     : 'TRUE'
+  MASTER                       : 'TRUE'
+  config: |
+    databases 1
+    maxmemory 50mb
+    tcp-keepalive 600

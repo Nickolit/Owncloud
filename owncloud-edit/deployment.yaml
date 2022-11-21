@@ -1,0 +1,154 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: owncloud_edit
+  namespace: online-platform
+  labels:
+    version: "buildVERSION_DEPLOY"
+spec:
+  selector:
+    matchLabels:
+      app: owncloud-edit
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: owncloud-edit
+    spec:
+      containers:
+      - name: owncloud-edit-mariadb
+        image: "mariadb:10.7"
+        envFrom:
+        - configMapRef:
+            name: owncloud-edit-cm
+        - secretRef:
+            name: owncloud-edit-secret
+        ports:
+        - containerPort: 3306
+          name: mariadb
+        volumeMounts:
+        - name: owncloud-edit
+          mountPath: /var/lib/mysql
+          subPath: db/
+      - name: owncloud-edit-owncloud
+        image: "online-editor-owncloud:buildVERSION_DEPLOY"
+        envFrom:
+        - configMapRef:
+            name: owncloud-edit-cm
+        - secretRef:
+            name: owncloud-edit-secret
+        ports:
+        - containerPort: 8080
+          name: owncloud
+        volumeMounts:
+        - name: owncloud-edit
+          mountPath: /bitnami/owncloud
+          subPath: _data/
+        - name: tz-config
+          mountPath: /etc/localtime
+          readOnly: true
+      - name: owncloud-edit-onlyoffice
+        image: "onlyoffice/documentserver:7.2.1"
+        envFrom:
+        - configMapRef:
+            name: owncloud-edit-cm
+        - secretRef:
+            name: owncloud-edit-secret
+        ports:
+        - containerPort: 80
+          name: onlyoffice
+        - containerPort: 443
+          name: onlyoffice-sec
+        volumeMounts:
+        - name: owncloud-edit
+          mountPath: /var/www/onlyoffice/Data
+          subPath: onlyoffice/Data
+        - name: owncloud-edit
+          mountPath: /var/lib/onlyoffice
+          subPath: onlyoffice/
+        - name: tz-config
+          mountPath: /etc/localtime
+          readOnly: true
+        - name: tls-crt
+          mountPath: /var/www/onlyoffice/Data/certs/tls-crt
+          readOnly: true
+        - name: tls-key
+          mountPath: /var/www/onlyoffice/Data/certs/tls-key
+          readOnly: true
+        - name: oo-dh
+          mountPath: /var/www/onlyoffice/Data/certs/dhparam
+          readOnly: true
+      - name: owncloud-edit-redis
+        image: "redis:6.2.0"
+        args: ["/etc/redis/redis.conf", "--requirepass", "$(REDIS_PASS)"]
+        volumeMounts:
+        - name: redis-config
+          mountPath: /etc/redis
+          readOnly: true
+        ports:
+        - containerPort: 6379
+          name: redis
+        envFrom:
+        - configMapRef:
+            name: owncloud-edit-cm
+        - secretRef:
+            name: owncloud-edit-secret
+      #exporter
+      - name: owncloud-edit-redis-exporter
+        image: oliver006/redis_exporter:v1.31.3
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        env:
+        - name: REDIS_ADDR
+          value: owncloud-edit-svc:6379
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: owncloud-edit-secret
+              key: REDIS_PASS
+        ports:
+        - containerPort: 9121
+          name: metrics
+      hostAliases:
+      - ip: "10.1.39.140"
+        hostnames:
+        - "online-editor.uat.sk.ru"
+      - ip: "10.1.39.140"
+        hostnames:
+        - "onlyoffice.uat.sk.ru"
+      imagePullSecrets:
+      - name: uat-secret
+      volumes:
+      - name: owncloud-edit
+        persistentVolumeClaim:
+          claimName: nfs-pvc-owncloud-edit-claim
+      - name: redis-config
+        configMap:
+          name: owncloud-edit-cm
+          items:
+          - key: config
+            path: redis.conf
+      - name: tz-config
+        hostPath:
+          path: /etc/localtime
+      - name: tls-crt
+        secret:
+          secretName: owncloud-edit-secret
+          items:
+          - key: OO_SSL_CERT
+            path: tls.crt
+      - name: tls-key
+        secret:
+          secretName: owncloud-edit-secret
+          items:
+          - key: OO_SSL_KEY
+            path: tls.key
+      - name: oo-dh
+        secret:
+          secretName: owncloud-edit-secret
+          items:
+          - key: OO_SSL_DHPARAM
+            path: dhparam.pem

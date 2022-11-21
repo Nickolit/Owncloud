@@ -1,0 +1,35 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: owncloud-edit-svc
+  namespace: online-platform
+spec:
+  type: ClusterIP
+  ports:
+  - name: mariadb
+    port: 3306
+    protocol: TCP
+    targetPort: 3306
+  - name: owncloud
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  - name: onlyoffice
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  - name: onlyoffice-sec
+    port: 443
+    protocol: TCP
+    targetPort: 443
+  - name: redis
+    port: 6379
+    protocol: TCP
+    targetPort: 6379
+#  - name: metrics
+#    port: 9121
+#    protocol: TCP
+#    targetPort: 9121
+  selector:
+    app: owncloud-edit

@@ -1,0 +1,21 @@
+---
+kind: Ingress
+apiVersion: extensions/v1beta1
+metadata:
+  name     : owncloud-edit
+  namespace: online_platform
+  annotations:
+    kubernetes.io/ingress.class: 'nginx'
+spec:
+  tls:
+  - secretName: owncloud-cert
+    hosts:
+    - owncloud.kube
+  rules:
+  - host: owncloud.kube
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: owncloud-edit
+          servicePort: 8080
