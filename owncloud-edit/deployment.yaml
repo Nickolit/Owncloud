@@ -2,10 +2,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: owncloud_edit
+  name: owncloud-edit
   namespace: online-platform
   labels:
-    version: "buildVERSION_DEPLOY"
+    version: "DEPLOY"
 spec:
   selector:
     matchLabels:
@@ -32,7 +32,7 @@ spec:
           mountPath: /var/lib/mysql
           subPath: db/
       - name: owncloud-edit-owncloud
-        image: "online-editor-owncloud:buildVERSION_DEPLOY"
+        image: "nickolit/owncloud:latest"
         envFrom:
         - configMapRef:
             name: owncloud-edit-cm
@@ -115,10 +115,10 @@ spec:
       hostAliases:
       - ip: "10.1.39.140"
         hostnames:
-        - "online-editor.uat.sk.ru"
-      - ip: "10.1.39.140"
+        - "online-editor"
+      - ip: "10.1.39.141"
         hostnames:
-        - "onlyoffice.uat.sk.ru"
+        - "onlyoffice"
       imagePullSecrets:
       - name: uat-secret
       volumes:
